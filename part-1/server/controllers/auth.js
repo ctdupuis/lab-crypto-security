@@ -1,36 +1,27 @@
-const bcrypt = require('bcryptjs');
-const users = [];
+const User = require('../../models/user.js');
 
 module.exports = {
-  login: (req, res) => {
-    const { username, password } = req.body
-    
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].username === username) {
-        const authenticated = bcrypt.compareSync(password, users[i].passwordHash)
-        if (authenticated) {
-          let userToReturn = {...users[i]}
-          delete userToReturn.passwordHash
-          res.status(200).send(userToReturn)
-        }
-      }
-    }
-    res.status(400).send("User not found.")
-  },
   register: (req, res) => {
-      const { username, email, firstName, lastName, password } = req.body
-      const salt = bcrypt.genSaltSync(5)
-      const passwordHash = bcrypt.hashSync(password, salt)
-      let user = {
-        username,
-        email,
-        firstName,
-        lastName,
-        passwordHash
-      }
-      users.push(user)
-      let userToReturn = {...user}
-      delete userToReturn.passwordHash
-      res.status(200).send(userToReturn)
-  }
+    let { username, password } = req.body;
+
+    const newUser = new User(username, password);
+
+    let safeUser = {...newUser};
+    delete safeUser.password;
+
+    res.status(200).send(safeUser);
+},
+login: (req, res) => {
+    let { username, password } = req.body;
+
+    let targetUser = User.all.find(user => user.username === username);
+
+    if (targetUser && targetUser.authenticate(password)) {
+        let safeUser = {...targetUser}
+        delete safeUser.password
+        res.status(200).send(safeUser);
+    } else {
+        res.status(404).send("User not found.")
+    }
+},
 }
